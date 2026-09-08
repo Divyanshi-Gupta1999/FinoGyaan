@@ -248,7 +248,7 @@ app.post('/api-proxy', async (req, res) => {
     const apiFetchOptions = {
       method: method || 'POST',
       headers: {...apiHeaders, ...headers},
-      body: body ? body : undefined,
+      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
     };
 
     // 5. Make the call to the API
@@ -685,7 +685,7 @@ app.get('/api/bigquery/data-health', async (req, res) => {
         FROM \`finwise-506509.finwise_data.macro_economic_indicators\`
         UNION ALL
         SELECT 'regime_summary',
-          MAX(data_end_date),
+          (SELECT MAX(trade_date) FROM \`finwise-506509.finwise_data.market_regime_history\`),
           COUNT(*)
         FROM \`finwise-506509.finwise_data.regime_summary\`
       )
