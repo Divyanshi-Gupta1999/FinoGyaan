@@ -43,6 +43,7 @@ gcloud services enable \
   cloudscheduler.googleapis.com \
   bigquery.googleapis.com \
   cloudbuild.googleapis.com \
+  cloudresourcemanager.googleapis.com \
   --project="${PROJECT_ID}" --quiet
 
 # --- Step 2: Deploy Cloud Function ---
@@ -85,7 +86,14 @@ FUNCTION_URL=$(gcloud functions describe "${FUNCTION_NAME}" \
 echo "  Function deployed at: ${FUNCTION_URL}"
 
 # Cleanup temp dir
-rm -rf "${DEPLOY_DIR}"
+# Grant Cloud Scheduler service account permission to invoke the function
+echo "  Granting run.invoker role to ${PROJECT_ID}@appspot.gserviceaccount.com..."
+gcloud run services add-iam-policy-binding "${FUNCTION_NAME}" \
+  --region="${REGION}" \
+  --member="serviceAccount:${PROJECT_ID}@appspot.gserviceaccount.com" \
+  --role="roles/run.invoker" \
+  --project="${PROJECT_ID}" \
+  --quiet
 
 # --- Step 3: Create/Update Cloud Scheduler Job ---
 echo ""

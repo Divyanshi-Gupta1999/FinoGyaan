@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserProfile } from '../types';
-import { DollarSign, TrendingUp, Target, Clock, ShieldAlert, Wallet, Flag, ChevronDown } from 'lucide-react';
+import { DollarSign, Target, Clock, ShieldAlert, Wallet, Flag, ChevronDown } from 'lucide-react';
 
 interface InputFormProps {
   profile: UserProfile;
@@ -32,9 +32,11 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
   return (
     <div className="bg-slate-900/95 border-r border-slate-800/80 w-full md:w-80 p-6 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-xl backdrop-blur-sm select-none">
       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/80">
-        <div className="bg-emerald-500/15 border border-emerald-500/30 p-2.5 rounded-xl shadow-inner flex-shrink-0">
-          <TrendingUp className="text-emerald-400 w-5 h-5" />
-        </div>
+        <img 
+          src="/favicon.svg" 
+          alt="FinWise AI" 
+          className="w-10 h-10 rounded-xl shadow-lg flex-shrink-0" 
+        />
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-1.5 leading-tight">
             FinWise <span className="text-emerald-400 font-semibold">AI</span>

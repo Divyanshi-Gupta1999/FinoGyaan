@@ -56,12 +56,8 @@ asset_stats AS (
         ROUND(
             (POWER(
                 SAFE_DIVIDE(
-                    (SELECT close_price FROM `{SOURCE_TABLE}` t2
-                     WHERE t2.asset_name = dr.asset_name
-                     ORDER BY trade_date DESC LIMIT 1),
-                    (SELECT close_price FROM `{SOURCE_TABLE}` t2
-                     WHERE t2.asset_name = dr.asset_name
-                     ORDER BY trade_date ASC LIMIT 1)
+                    ARRAY_AGG(close_price ORDER BY trade_date DESC LIMIT 1)[OFFSET(0)],
+                    ARRAY_AGG(close_price ORDER BY trade_date ASC LIMIT 1)[OFFSET(0)]
                 ),
                 SAFE_DIVIDE(252.0, COUNT(*))
             ) - 1) * 100,

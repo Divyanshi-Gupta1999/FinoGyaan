@@ -12,23 +12,23 @@ import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
 import { execSync } from 'child_process';
 
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, '../frontend/dist');
+
 const app = express();
 app.use(express.json({limit: process?.env?.API_PAYLOAD_MAX_SIZE || "7mb"}));
 
-const PORT = process?.env?.API_BACKEND_PORT || 5000;
-const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "127.0.0.1";
+const PORT = parseInt(process?.env?.PORT || process?.env?.API_BACKEND_PORT || "8080", 10);
+const API_BACKEND_HOST = process?.env?.API_BACKEND_HOST || "0.0.0.0";
 
-const GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION;
-const GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT;
-if (!GOOGLE_CLOUD_PROJECT || !GOOGLE_CLOUD_LOCATION) {
-  console.error("Error: Environment variables GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION must be set.");
-  process.exit(1);
-}
-const PROXY_HEADER = process?.env?.PROXY_HEADER;
-if (!PROXY_HEADER) {
-  console.error("Error: Environment variables PROXY_HEADER must be set.");
-  process.exit(1);
-}
+const GOOGLE_CLOUD_LOCATION = process?.env?.GOOGLE_CLOUD_LOCATION || "global";
+const GOOGLE_CLOUD_PROJECT = process?.env?.GOOGLE_CLOUD_PROJECT || "finwise-506509";
+const PROXY_HEADER = process?.env?.PROXY_HEADER || "olsvpAa7bsvcult5KJbg8D_homx6JY-g";
 
 app.set('trust proxy', 1 /* number of proxies between user and server */);
 
@@ -240,6 +240,21 @@ app.post('/api-proxy', async (req, res) => {
       console.error(`[Node Proxy] Upstream host not allowed: ${parsedApiUrl.hostname}`);
       return res.status(400).json({ error: 'Upstream host not allowed.' });
     }
+
+    // Identify which autonomous agent is making the call for clear observability in GCP logs
+    const bodyStr = typeof body === 'string' ? body : JSON.stringify(body || {});
+    let agentLabel = "Agent";
+    if (bodyStr.includes('USER PROFILE:') || bodyStr.includes('Risk Profile:')) {
+      agentLabel = "Agent 1: Macro Strategist";
+    } else if (bodyStr.includes('Narrative Synthesizer') || bodyStr.includes('Regime Analysis')) {
+      agentLabel = "Agent 3: Narrative & Stress-Tester";
+    } else if (bodyStr.includes('selected the asset category') || bodyStr.includes('subCategories')) {
+      agentLabel = "Agent 4: Asset Picker & Sector Analyst";
+    } else if (extractedParams?.model?.includes('flash')) {
+      agentLabel = "Agent 5: Conversational Copilot";
+    }
+
+    console.log(`[Multi-Agent System] Calling ${extractedParams?.model} (${agentLabel})`);
     console.log(`[Node Proxy] Forwarding to Vertex API: ${apiUrl}`);
 
     // 4. Prepare headers for the API call
@@ -496,10 +511,11 @@ app.get('/api/bigquery/top-stocks', async (req, res) => {
     else if (rawCategory.includes('gov') || rawCategory.includes('treasury') || rawCategory.includes('gilt')) keyword = 'government';
     else if (rawCategory.includes('bond') || rawCategory.includes('fixed') || rawCategory.includes('debt')) keyword = 'bond';
     else if (rawCategory.includes('index') || rawCategory.includes('etf') || rawCategory.includes('mutual') || rawCategory.includes('flexi')) keyword = 'index';
-    else if (rawCategory.includes('tech') || rawCategory.includes('software')) keyword = 'technology';
-    else if (rawCategory.includes('fin') || rawCategory.includes('bank')) keyword = 'finance';
-    else if (rawCategory.includes('health') || rawCategory.includes('pharma')) keyword = 'healthcare';
-    else if (rawCategory.includes('large') || rawCategory.includes('cap') || rawCategory.includes('consumer')) keyword = 'large cap';
+    else if (rawCategory.includes('tech') || rawCategory.includes('software')) keyword = 'tech';
+    else if (rawCategory.includes('fin') || rawCategory.includes('bank')) keyword = 'finan';
+    else if (rawCategory.includes('health') || rawCategory.includes('pharma')) keyword = 'pharma';
+    else if (rawCategory.includes('consumer')) keyword = 'consumer';
+    else if (rawCategory.includes('large') || rawCategory.includes('cap') || rawCategory.includes('equit') || rawCategory.includes('stock')) keyword = 'equity';
     else {
       keyword = rawCategory.replace(/[^a-zA-Z0-9 ]/g, '').split(' ')[0] || '';
     }
@@ -724,8 +740,22 @@ app.get('/api/bigquery/data-health', async (req, res) => {
   }
 });
 
+// Serve static frontend assets if built
+if (fs.existsSync(distPath)) {
+  console.log(`[Static Serving] Serving frontend assets from: ${distPath}`);
+  app.use(express.static(distPath));
+
+  // SPA fallback for all non-API GET requests (Express 5 compatible)
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/ws')) {
+      return res.sendFile(path.join(distPath, 'index.html'));
+    }
+    next();
+  });
+}
+
 const server = app.listen(PORT, API_BACKEND_HOST, () => {
-  console.log(`Vertex AI Backend listening at http://localhost:${PORT}`);
+  console.log(`FinWise AI Server listening on ${API_BACKEND_HOST}:${PORT}`);
 });
 
 

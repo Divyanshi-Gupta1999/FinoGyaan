@@ -6,7 +6,7 @@
   "description": "Node backend for proxying Google Cloud API requests",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env.local server.js",
+    "start": "node server.js",
     "dev": "nodemon --env-file=.env.local server.js"
   },
   "dependencies": {

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '../types';
 import { sendChatMessage } from '../services/geminiService';
 import { Send, Bot, User } from 'lucide-react';
@@ -7,6 +8,33 @@ interface ChatProps {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
+
+const MarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
+  // Normalize triple asterisks or broken bold markers before rendering
+  const normalized = content
+    .replace(/\*\*\*+/g, '**')
+    .replace(/([^\n])\n(\s*[\*\-]\s+)/g, '$1\n\n$2');
+
+  return (
+    <div className="text-sm leading-relaxed text-slate-200 space-y-2">
+      <ReactMarkdown
+        components={{
+          h1: ({ node, ...props }) => <h3 className="text-base font-bold text-white mt-3 mb-1" {...props} />,
+          h2: ({ node, ...props }) => <h3 className="text-sm font-bold text-white mt-2.5 mb-1" {...props} />,
+          h3: ({ node, ...props }) => <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mt-3 mb-1 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span {...props} /></h4>,
+          p: ({ node, ...props }) => <p className="my-1.5 leading-relaxed text-slate-200" {...props} />,
+          ul: ({ node, ...props }) => <ul className="my-2 space-y-1.5 pl-4 list-disc marker:text-emerald-400" {...props} />,
+          ol: ({ node, ...props }) => <ol className="my-2 space-y-1.5 pl-4 list-decimal marker:text-emerald-400" {...props} />,
+          li: ({ node, ...props }) => <li className="pl-1 leading-relaxed text-slate-200" {...props} />,
+          strong: ({ node, ...props }) => <strong className="font-semibold text-white tracking-tight" {...props} />,
+          code: ({ node, ...props }) => <code className="bg-slate-900 border border-slate-800 text-emerald-300 px-1.5 py-0.5 rounded text-xs font-mono" {...props} />,
+        }}
+      >
+        {normalized}
+      </ReactMarkdown>
+    </div>
+  );
+};
 
 const Chat: React.FC<ChatProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
@@ -132,8 +160,12 @@ const Chat: React.FC<ChatProps> = ({ messages, setMessages }) => {
                   ? 'bg-blue-600 text-white rounded-tr-none' 
                   : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none'
               }`}>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {msg.text}
+                <div className="text-sm leading-relaxed">
+                  {msg.role === 'user' ? (
+                    <div className="whitespace-pre-wrap">{msg.text}</div>
+                  ) : (
+                    <MarkdownRenderer content={msg.text} />
+                  )}
                 </div>
               </div>
             </div>

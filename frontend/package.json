@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "latest",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "recharts": "latest",
-    "@google/genai": "latest",
-    "lucide-react": "latest"
+    "react-markdown": "^10.1.0",
+    "recharts": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",

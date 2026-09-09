@@ -338,7 +338,9 @@ export const initChatSession = (profile: UserProfile, allocation: AllocationData
         When answering:
         - Reference specific BigQuery numbers (CAGR, drawdowns, current prices, momentum, inflation, interest rates)
         - Provide data-grounded advice, not generic financial advice
-        - Keep answers concise, professional, and formatted in clean Markdown
+        - Structure your response cleanly with short paragraphs and clear bullet points
+        - Do NOT use triple asterisks (never output '***'); use clean, standard bold titles on bullet points (e.g. * **Emergency Buffer:** ...)
+        - Keep answers concise, direct, and easy to read on screen
       `,
     }
   });
