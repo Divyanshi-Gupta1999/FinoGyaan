@@ -40,8 +40,29 @@ gcloud run deploy "${SERVICE_NAME}" \
 
 # 3. Deploy Firebase Hosting rewrite
 echo ""
-echo "[3/4] Deploying Firebase Hosting for finogyaan..."
-npx -y firebase-tools deploy --only hosting:finogyaan --project "${PROJECT_ID}" || true
+echo "[3/4] Releasing Firebase Hosting for site ${SERVICE_NAME}..."
+FB_TOKEN=$(gcloud auth print-access-token)
+FB_VERSION=$(curl -s -X POST \
+  -H "Authorization: Bearer ${FB_TOKEN}" \
+  -H "X-Goog-User-Project: ${PROJECT_ID}" \
+  -H "Content-Type: application/json" \
+  -d "{\"config\":{\"rewrites\":[{\"glob\":\"**\",\"run\":{\"serviceId\":\"${SERVICE_NAME}\",\"region\":\"${REGION}\"}}]}}" \
+  "https://firebasehosting.googleapis.com/v1beta1/projects/${PROJECT_ID}/sites/${SERVICE_NAME}/versions" | grep -o '"name": "[^"]*"' | head -n 1 | cut -d'"' -f4 || true)
+
+if [ -n "${FB_VERSION}" ]; then
+  curl -s -X PATCH \
+    -H "Authorization: Bearer ${FB_TOKEN}" \
+    -H "X-Goog-User-Project: ${PROJECT_ID}" \
+    -H "Content-Type: application/json" \
+    -d '{"status":"FINALIZED"}' \
+    "https://firebasehosting.googleapis.com/v1beta1/${FB_VERSION}?update_mask=status" > /dev/null
+  curl -s -X POST \
+    -H "Authorization: Bearer ${FB_TOKEN}" \
+    -H "X-Goog-User-Project: ${PROJECT_ID}" \
+    -H "Content-Type: application/json" \
+    "https://firebasehosting.googleapis.com/v1beta1/projects/${PROJECT_ID}/sites/${SERVICE_NAME}/releases?versionName=${FB_VERSION}" > /dev/null
+  echo "Firebase Hosting release successful!"
+fi
 
 # 4. Fetch Service URL & Health Check
 echo ""
