@@ -72,6 +72,7 @@ export const generateAllocationAgent = async (profile: UserProfile, benchmarks: 
     model: 'gemini-2.5-pro',
     contents: prompt,
     config: {
+      temperature: 0.0,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -183,6 +184,7 @@ export const generateNarrativeAgent = async (profile: UserProfile, allocation: A
     model: 'gemini-2.5-pro',
     contents: prompt,
     config: {
+      temperature: 0.1,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -258,6 +260,7 @@ export const getCategoryRecommendation = async (category: string, profile: UserP
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
+      temperature: 0.0,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.OBJECT,
@@ -356,6 +359,7 @@ FinoGyaan advises across BOTH the Indian domestic market (NSE/BSE) AND the US/Gl
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
+      temperature: 0.0,
       responseMimeType: 'application/json',
       responseSchema: {
         type: Type.ARRAY,
@@ -428,6 +432,7 @@ export const initChatSession = (profile: UserProfile, allocation: AllocationData
   currentChatSession = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
+      temperature: 0.2,
       systemInstruction: `
         You are FinoGyaan, an elite AI wealth advisor backed by live BigQuery datasets (finwise-506509.finwise_data).
         You have analyzed 660,000+ records of historical market data and live macroeconomic indicators (Inflation, Fed Policy Rates, Yield Curve spreads, VIX).
