@@ -6,12 +6,13 @@ interface InputFormProps {
   profile: UserProfile;
   onChange: (profile: UserProfile) => void;
   onSubmit: () => void;
+  onReset: () => void;
   isLoading: boolean;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
 }
 
-const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLoading }) => {
+const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, onReset, isLoading }) => {
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     onChange({
@@ -33,21 +34,26 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
 
   return (
     <div className="bg-white dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800/80 w-full md:w-80 p-6 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-sm dark:shadow-xl backdrop-blur-sm select-none transition-colors duration-200">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800/80">
-        <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 p-1.5 flex items-center justify-center shadow-sm flex-shrink-0">
+      <button
+        onClick={onReset}
+        disabled={isLoading}
+        className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800/80 w-full text-left group cursor-pointer disabled:cursor-not-allowed"
+        title="Click to start a fresh plan"
+      >
+        <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 p-1.5 flex items-center justify-center shadow-sm flex-shrink-0 group-hover:border-emerald-500/50 group-hover:bg-emerald-50 dark:group-hover:bg-slate-800 transition-all">
           <img 
             src="/finogyaan-icon.png" 
             alt="FinoGyaan" 
-            className="w-full h-full object-contain" 
+            className="w-full h-full object-contain group-hover:scale-110 transition-transform" 
           />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center leading-tight">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
             FinoGyaan
           </h1>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tracking-tight mt-0.5">Institutional Wealth Advisor</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tracking-tight mt-0.5 group-hover:text-emerald-500 dark:group-hover:text-emerald-500 transition-colors">↩ New Plan</p>
         </div>
-      </div>
+      </button>
 
       <div className="space-y-4 flex-grow">
         

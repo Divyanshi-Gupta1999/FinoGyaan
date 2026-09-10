@@ -67,6 +67,24 @@ const App: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const handleReset = () => {
+    setProfile(DEFAULT_PROFILE);
+    setIsPlanActive(false);
+    setBenchmarks(null);
+    setRawAnalysis(null);
+    setMacroRegime(null);
+    setAllocation(null);
+    setProjections(null);
+    setNarrativeData(null);
+    setIsFetchingBQ(false);
+    setIsGeneratingAllocation(false);
+    setIsGeneratingProjections(false);
+    setIsGeneratingNarrative(false);
+    setActiveTab(TabState.DASHBOARD);
+    setChatMessages([]);
+    setError(null);
+  };
+
   const handleGeneratePlan = async () => {
     // Validation
     if (profile.income <= 0) {
@@ -168,7 +186,8 @@ const App: React.FC = () => {
       <InputForm 
         profile={profile} 
         onChange={setProfile} 
-        onSubmit={handleGeneratePlan} 
+        onSubmit={handleGeneratePlan}
+        onReset={handleReset}
         isLoading={isFetchingBQ || isGeneratingAllocation}
         theme={theme}
         onToggleTheme={toggleTheme}
