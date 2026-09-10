@@ -27,7 +27,7 @@ Used during wealth advisory client sessions, FIRE milestone planning, and portfo
 - Crisis Stress Testing: Quantifies portfolio drawdowns against historical crises (2008 GFC, 2020 Shock) with exact recovery timelines.
 
 ## Brand Commitments
-- Name: FinWise AI
+- Name: FinoGyaan AI
 - Theme: Modern dark mode aesthetic, sleek emerald & blue accents, glassmorphic panels, clear typographic hierarchy.
 - Voice: Institutional, data-grounded, authoritative, and actionable.
 

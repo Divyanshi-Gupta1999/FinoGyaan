@@ -409,16 +409,59 @@ app.get('/api/bigquery/market-analysis', async (req, res) => {
     if (!accessToken) return;
 
     const queries = {
-      regimeSummary: `SELECT * FROM \`finwise-506509.finwise_data.regime_summary\` ORDER BY annualized_return_cagr DESC`,
+      regimeSummary: `WITH normalized AS (
+        SELECT asset_name, trade_date,
+          CASE 
+            WHEN asset_name = 'SP_500' AND close_price < 2000 AND trade_date >= '2026-08-20' THEN close_price * 10 
+            ELSE close_price 
+          END as close_price
+        FROM \`finwise-506509.finwise_data.market_regime_history\`
+      ),
+      daily_returns AS (
+        SELECT asset_name, trade_date, close_price,
+          (close_price - LAG(close_price) OVER (PARTITION BY asset_name ORDER BY trade_date))
+            / LAG(close_price) OVER (PARTITION BY asset_name ORDER BY trade_date) as daily_return
+        FROM normalized
+      ),
+      endpoints AS (
+        SELECT asset_name,
+          MIN(trade_date) as start_date,
+          MAX(trade_date) as end_date,
+          ARRAY_AGG(close_price ORDER BY trade_date ASC LIMIT 1)[OFFSET(0)] as start_price,
+          ARRAY_AGG(close_price ORDER BY trade_date DESC LIMIT 1)[OFFSET(0)] as end_price,
+          COUNT(*) as total_trading_days
+        FROM normalized
+        GROUP BY asset_name
+      )
+      SELECT e.asset_name,
+        e.total_trading_days,
+        e.start_date as data_start_date,
+        e.end_date as data_end_date,
+        ROUND((POW(e.end_price / e.start_price, 365.25 / DATE_DIFF(e.end_date, e.start_date, DAY)) - 1) * 100, 2) as annualized_return_cagr,
+        ROUND(STDDEV(d.daily_return) * SQRT(252) * 100, 2) as annualized_volatility,
+        ROUND(MIN(d.daily_return) * 100, 2) as worst_single_day_crash,
+        ROUND(MAX(d.daily_return) * 100, 2) as best_single_day_gain
+      FROM endpoints e
+      JOIN daily_returns d ON e.asset_name = d.asset_name
+      GROUP BY e.asset_name, e.total_trading_days, e.start_date, e.end_date, e.start_price, e.end_price
+      ORDER BY annualized_return_cagr DESC`,
 
-      currentPrices: `WITH recent AS (
+      currentPrices: `WITH normalized AS (
+        SELECT asset_name, trade_date,
+          CASE 
+            WHEN asset_name = 'SP_500' AND close_price < 2000 AND trade_date >= '2026-08-20' THEN close_price * 10 
+            ELSE close_price 
+          END as close_price
+        FROM \`finwise-506509.finwise_data.market_regime_history\`
+      ),
+      recent AS (
         SELECT asset_name, close_price, trade_date,
           ROW_NUMBER() OVER (PARTITION BY asset_name ORDER BY trade_date DESC) as rn
-        FROM \`finwise-506509.finwise_data.market_regime_history\`
+        FROM normalized
       ), yr_ago AS (
         SELECT asset_name, close_price, trade_date,
           ROW_NUMBER() OVER (PARTITION BY asset_name ORDER BY ABS(DATE_DIFF(trade_date, DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR), DAY))) as rn
-        FROM \`finwise-506509.finwise_data.market_regime_history\`
+        FROM normalized
       )
       SELECT r.asset_name,
         ROUND(r.close_price, 2) as current_price,
@@ -429,11 +472,19 @@ app.get('/api/bigquery/market-analysis', async (req, res) => {
       FROM recent r JOIN yr_ago y ON r.asset_name = y.asset_name AND y.rn = 1
       WHERE r.rn = 1`,
 
-      momentum30d: `WITH daily_returns AS (
+      momentum30d: `WITH normalized AS (
+        SELECT asset_name, trade_date,
+          CASE 
+            WHEN asset_name = 'SP_500' AND close_price < 2000 AND trade_date >= '2026-08-20' THEN close_price * 10 
+            ELSE close_price 
+          END as close_price
+        FROM \`finwise-506509.finwise_data.market_regime_history\`
+      ),
+      daily_returns AS (
         SELECT asset_name, trade_date, close_price,
           (close_price - LAG(close_price) OVER (PARTITION BY asset_name ORDER BY trade_date))
             / LAG(close_price) OVER (PARTITION BY asset_name ORDER BY trade_date) as daily_return
-        FROM \`finwise-506509.finwise_data.market_regime_history\`
+        FROM normalized
       )
       SELECT asset_name,
         ROUND(AVG(daily_return) * 252 * 100, 2) as annualized_momentum_pct,
@@ -445,10 +496,18 @@ app.get('/api/bigquery/market-analysis', async (req, res) => {
       GROUP BY asset_name
       ORDER BY annualized_momentum_pct DESC`,
 
-      maxDrawdowns: `WITH prices AS (
+      maxDrawdowns: `WITH normalized AS (
+        SELECT asset_name, trade_date,
+          CASE 
+            WHEN asset_name = 'SP_500' AND close_price < 2000 AND trade_date >= '2026-08-20' THEN close_price * 10 
+            ELSE close_price 
+          END as close_price
+        FROM \`finwise-506509.finwise_data.market_regime_history\`
+      ),
+      prices AS (
         SELECT asset_name, trade_date, close_price,
           MAX(close_price) OVER (PARTITION BY asset_name ORDER BY trade_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as running_max
-        FROM \`finwise-506509.finwise_data.market_regime_history\`
+        FROM normalized
       ), drawdowns AS (
         SELECT asset_name, trade_date, close_price, running_max,
           (close_price - running_max) / running_max as drawdown
@@ -459,14 +518,22 @@ app.get('/api/bigquery/market-analysis', async (req, res) => {
         ANY_VALUE(trade_date HAVING MIN drawdown) as max_drawdown_date
       FROM drawdowns GROUP BY asset_name ORDER BY max_drawdown_pct ASC`,
 
-      priceRange: `SELECT asset_name,
+      priceRange: `WITH normalized AS (
+        SELECT asset_name, trade_date,
+          CASE 
+            WHEN asset_name = 'SP_500' AND close_price < 2000 AND trade_date >= '2026-08-20' THEN close_price * 10 
+            ELSE close_price 
+          END as close_price
+        FROM \`finwise-506509.finwise_data.market_regime_history\`
+      )
+      SELECT asset_name,
         MIN(trade_date) as data_start_date,
         MAX(trade_date) as data_end_date,
         ROUND(MIN(close_price), 2) as all_time_low,
         ROUND(MAX(close_price), 2) as all_time_high,
         ROUND(AVG(close_price), 2) as avg_price,
         COUNT(*) as total_trading_days
-      FROM \`finwise-506509.finwise_data.market_regime_history\`
+      FROM normalized
       GROUP BY asset_name ORDER BY total_trading_days DESC`,
     };
 
@@ -503,35 +570,84 @@ app.get('/api/bigquery/top-stocks', async (req, res) => {
     const rawCategory = (req.query.category || '').toLowerCase();
     const marketParam = (req.query.market || '').toUpperCase();
     
+    // If the category is physical bullion/gold, it's not a stock ticker traded on NSE
+    if (rawCategory.includes('physical')) {
+      return res.json({ success: true, rows: [], isPhysical: true });
+    }
+
     // Determine the best keyword filter based on incoming category name
-    let keyword = '';
-    if (rawCategory.includes('silver')) keyword = 'silver';
-    else if (rawCategory.includes('gold') && rawCategory.includes('mining')) keyword = 'mining';
-    else if (rawCategory.includes('gold')) keyword = 'gold';
-    else if (rawCategory.includes('gov') || rawCategory.includes('treasury') || rawCategory.includes('gilt')) keyword = 'government';
-    else if (rawCategory.includes('bond') || rawCategory.includes('fixed') || rawCategory.includes('debt')) keyword = 'bond';
-    else if (rawCategory.includes('index') || rawCategory.includes('etf') || rawCategory.includes('mutual') || rawCategory.includes('flexi')) keyword = 'index';
-    else if (rawCategory.includes('tech') || rawCategory.includes('software')) keyword = 'tech';
-    else if (rawCategory.includes('fin') || rawCategory.includes('bank')) keyword = 'finan';
-    else if (rawCategory.includes('health') || rawCategory.includes('pharma')) keyword = 'pharma';
-    else if (rawCategory.includes('consumer')) keyword = 'consumer';
-    else if (rawCategory.includes('large') || rawCategory.includes('cap') || rawCategory.includes('equit') || rawCategory.includes('stock')) keyword = 'equity';
-    else {
-      keyword = rawCategory.replace(/[^a-zA-Z0-9 ]/g, '').split(' ')[0] || '';
+    let keywordClause = '';
+    if (rawCategory.includes('silver')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%silver etf%' OR (LOWER(l.name) LIKE '%silver%' AND NOT LOWER(l.name) LIKE '%gold%'))";
+    } else if (rawCategory.includes('mining')) {
+      keywordClause = "AND LOWER(l.category) LIKE '%mining%'";
+    } else if (rawCategory.includes('gold') || rawCategory.includes('bullion') || rawCategory.includes('sgb') || rawCategory.includes('precious')) {
+      // Gold ETFs & Sovereign Gold Bonds — strictly exclude Mining equities and Silver
+      keywordClause = "AND LOWER(l.category) = 'gold / silver - gold etfs'";
+    } else if (rawCategory.includes('gov') || rawCategory.includes('treasury') || rawCategory.includes('gilt')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%gov%' OR LOWER(l.category) LIKE '%treasury%' OR LOWER(l.category) LIKE '%gilt%' OR LOWER(l.name) LIKE '%gilt%')";
+    } else if (rawCategory.includes('bond') || rawCategory.includes('fixed') || rawCategory.includes('debt')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%bond%' OR LOWER(l.category) LIKE '%debt%')";
+    } else if (rawCategory.includes('midcap') || rawCategory.includes('mid-cap') || rawCategory.includes('mid 150') || rawCategory.includes('flexi') || rawCategory.includes('smallcap') || rawCategory.includes('small-cap')) {
+      // Differentiate Midcap specifically: only return Midcap ETF and small/mid indices
+      if (rawCategory.includes('indian') || rawCategory.includes('india') || rawCategory.includes('domestic')) {
+        keywordClause = "AND l.symbol = 'MID150BEES.NS'";
+      } else {
+        keywordClause = "AND l.symbol IN ('MID150BEES.NS', 'IWM')";
+      }
+    } else if (rawCategory.includes('nasdaq') || (rawCategory.includes('us') && rawCategory.includes('tech')) || rawCategory.includes('qqq')) {
+      // US Tech & Nasdaq 100 Index specifically
+      keywordClause = "AND (l.symbol IN ('QQQ') OR (LOWER(l.category) LIKE '%tech%' AND NOT l.symbol LIKE '%.NS'))";
+    } else if (rawCategory.includes('s&p') || rawCategory.includes('sp500') || rawCategory.includes('500') || rawCategory.includes('voo') || rawCategory.includes('spy')) {
+      // S&P 500 & US Mega-Cap Index
+      keywordClause = "AND l.symbol IN ('VOO', 'SPY', 'DIA')";
+    } else if (rawCategory.includes('bank') || rawCategory.includes('financial') || rawCategory.includes('sectoral')) {
+      // Sectoral Banking & Finance Index
+      keywordClause = "AND (l.symbol IN ('BANKBEES.NS') OR LOWER(l.category) LIKE '%finan%' OR LOWER(l.name) LIKE '%bank%')";
+    } else if (rawCategory.includes('large') || (rawCategory.includes('core') && rawCategory.includes('index'))) {
+      // Core Large-Cap Index (Nifty 50, Next 50, S&P 500) — strictly excludes Midcaps
+      if (rawCategory.includes('indian') || rawCategory.includes('india') || rawCategory.includes('domestic')) {
+        keywordClause = "AND l.symbol IN ('NIFTYBEES.NS', 'JUNIORBEES.NS', 'BANKBEES.NS')";
+      } else {
+        keywordClause = "AND l.symbol IN ('NIFTYBEES.NS', 'JUNIORBEES.NS', 'VOO', 'SPY', 'DIA')";
+      }
+    } else if (rawCategory.includes('index') || rawCategory.includes('mutual') || rawCategory.includes('etf') || rawCategory.includes('fund')) {
+      // Index & Mutual Funds (strictly exclude Gold/Silver ETFs, and strictly exclude Midcaps from domestic/core index)
+      const excludeMid = !rawCategory.includes('mid');
+      const midExcludeClause = excludeMid ? "AND NOT l.symbol = 'MID150BEES.NS'" : "";
+      keywordClause = `AND (LOWER(l.category) LIKE '%index%' OR LOWER(l.category) LIKE '%mutual%') AND NOT LOWER(l.category) LIKE '%gold%' AND NOT LOWER(l.category) LIKE '%silver%' ${midExcludeClause}`;
+    } else if (rawCategory.includes('tech') || rawCategory.includes('software')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%tech%' OR LOWER(l.category) LIKE '%software%')";
+    } else if (rawCategory.includes('fin') || rawCategory.includes('bank')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%finan%' OR LOWER(l.category) LIKE '%bank%')";
+    } else if (rawCategory.includes('health') || rawCategory.includes('pharma')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%pharma%' OR LOWER(l.category) LIKE '%health%')";
+    } else if (rawCategory.includes('consumer')) {
+      keywordClause = "AND LOWER(l.category) LIKE '%consumer%'";
+    } else if (rawCategory.includes('equit') || rawCategory.includes('stock') || rawCategory.includes('bluechip') || rawCategory.includes('growth')) {
+      keywordClause = "AND (LOWER(l.category) LIKE '%equity%' OR LOWER(l.category) LIKE '%large%')";
+    } else {
+      const cleanWord = rawCategory.replace(/[^a-zA-Z0-9 ]/g, '').split(' ')[0] || '';
+      if (cleanWord) {
+        keywordClause = `AND LOWER(l.category) LIKE '%${cleanWord}%'`;
+      }
     }
 
     // Determine geographic filter (Indian vs US / International)
     let marketFilter = '';
-    const isExplicitlyIndian = rawCategory.includes('indian') || rawCategory.includes('india') || rawCategory.includes('nifty');
-    const isExplicitlyInternational = rawCategory.includes('international') || rawCategory.includes('us ') || rawCategory.includes('foreign') || rawCategory.includes('global');
+    const isExplicitlyIndian = rawCategory.includes('indian') || rawCategory.includes('india') || rawCategory.includes('nifty') || rawCategory.includes('domestic') || rawCategory.includes('bse') || rawCategory.includes('nse');
+    const isExplicitlyInternational = rawCategory.includes('international') || rawCategory.includes('us ') || rawCategory.includes('u.s') || rawCategory.includes('foreign') || rawCategory.includes('global') || rawCategory.includes('nasdaq') || rawCategory.includes('s&p') || rawCategory.includes('wall street');
 
-    if (isExplicitlyIndian || (!isExplicitlyInternational && marketParam === 'IN')) {
+    if (isExplicitlyIndian) {
       marketFilter = "AND (l.symbol LIKE '%.NS' OR l.category LIKE 'IN%')";
-    } else if (isExplicitlyInternational || marketParam === 'US') {
+    } else if (isExplicitlyInternational) {
+      marketFilter = "AND (NOT l.symbol LIKE '%.NS' AND NOT l.category LIKE 'IN%')";
+    } else if (marketParam === 'US') {
       marketFilter = "AND (NOT l.symbol LIKE '%.NS' AND NOT l.category LIKE 'IN%')";
     }
+    // If not restricted to a single country, marketFilter remains empty to allow both Indian and US instruments!
 
-    console.log(`[BigQuery Top Stocks] Category: "${rawCategory}" | Market: "${marketParam}" -> Keyword: "${keyword}" | Filter: "${marketFilter}"`);
+    console.log(`[BigQuery Top Stocks] Category: "${rawCategory}" | MarketParam: "${marketParam}" -> Filter: "${marketFilter || 'ALL MARKETS (US + IN)'}"`);
 
     const sqlQuery = `
       WITH latest AS (
@@ -550,7 +666,7 @@ app.get('/api/bigquery/top-stocks', async (req, res) => {
       FROM latest l
       JOIN yr_ago y ON l.symbol = y.symbol AND y.rn = 1
       WHERE l.rn = 1
-        ${keyword ? `AND LOWER(l.category) LIKE '%${keyword}%'` : ''}
+        ${keywordClause}
         ${marketFilter}
       ORDER BY return_1yr_pct DESC
       LIMIT 10
@@ -575,7 +691,7 @@ app.get('/api/bigquery/top-stocks', async (req, res) => {
       return obj;
     });
 
-    return res.json({ success: true, rows, keywordUsed: keyword });
+    return res.json({ success: true, rows, keywordUsed: rawCategory });
   } catch (error) {
     console.error('[BigQuery Proxy] Unexpected error fetching top stocks:', error);
     return res.status(500).json({ error: error.message || 'BigQuery query failed' });

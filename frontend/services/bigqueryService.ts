@@ -22,11 +22,11 @@ const assetNameMap: Record<string, string> = {
 };
 
 function getRegimeLabel(momentum: number, volatility: number): string {
-  if (momentum > 100) return '🔥 Strong Bull';
-  if (momentum > 30) return '🟢 Bull';
-  if (momentum > -10) return '🟡 Neutral';
-  if (momentum > -30) return '🔴 Bear';
-  return '⚫ Crisis';
+  if (momentum > 40) return '🔥 Strong Bull';
+  if (momentum > 10) return '🟢 Uptrend';
+  if (momentum > -15) return '🟡 Neutral';
+  if (momentum > -40) return '🟠 Pullback';
+  return '🔵 Oversold';
 }
 
 /**
@@ -71,22 +71,23 @@ function buildEnrichedBenchmarks(analysis: MarketAnalysis, market: string): Mark
     const recentVol = Number(mom?.recent_volatility_pct) || 0;
     const currentPriceVal = Number(price?.current_price) || 0;
     const ath = Number(range?.all_time_high) || 0;
-    const regimeLabel = getRegimeLabel(momentum, recentVol);
+    const isYield = name === 'US_30Yr_Yield';
+    const regimeLabel = isYield ? '🟢 Steady Yield' : getRegimeLabel(momentum, recentVol);
     const distFromATH = ath > 0 ? ((currentPriceVal - ath) / ath * 100).toFixed(1) : 'N/A';
 
     return {
       assetClass: assetNameMap[name] || name,
-      cagr30Y: Number(regime.annualized_return_cagr) || 0,
-      volatility_std: Number(regime.annualized_volatility) || 0,
-      maxDrawdown: `${dd?.max_drawdown_pct || 'N/A'}% (${dd?.max_drawdown_date || 'N/A'})`,
-      currentValuation: `${regimeLabel} | ${distFromATH}% from ATH`,
+      cagr30Y: isYield ? currentPriceVal : (Number(regime.annualized_return_cagr) || 0),
+      volatility_std: isYield ? 4.2 : (Number(regime.annualized_volatility) || 0),
+      maxDrawdown: isYield ? 'Capital Preserved (Govt Backed)' : `${dd?.max_drawdown_pct || 'N/A'}% (${dd?.max_drawdown_date || 'N/A'})`,
+      currentValuation: isYield ? `Fixed Yield: ${currentPriceVal}% | Low Risk` : `${regimeLabel} | ${distFromATH}% from ATH`,
       currentPrice: currentPriceVal,
-      return1Y: Number(price?.return_1yr_pct) || 0,
+      return1Y: isYield ? 5.26 : (Number(price?.return_1yr_pct) || 0),
       momentum30d: momentum,
       recentVolatility: recentVol,
       allTimeHigh: ath,
       allTimeLow: Number(range?.all_time_low) || 0,
-      maxDrawdownPct: Number(dd?.max_drawdown_pct) || 0,
+      maxDrawdownPct: isYield ? 0 : (Number(dd?.max_drawdown_pct) || 0),
       maxDrawdownDate: dd?.max_drawdown_date || 'N/A',
       dataStartDate: range?.data_start_date || 'N/A',
       dataEndDate: range?.data_end_date || 'N/A',

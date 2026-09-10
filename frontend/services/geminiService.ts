@@ -34,15 +34,14 @@ function buildMarketContext(benchmarks: MarketBenchmark[], macroRegime?: MacroRe
 
 // AGENT 1: The Macro Strategist — Grounded in Deep BigQuery Analytics
 export const generateAllocationAgent = async (profile: UserProfile, benchmarks: MarketBenchmark[], macroRegime?: MacroRegimeState | null): Promise<AllocationData> => {
-  const currency = getCurrencyStr(profile.market);
+  const currency = '₹';
   const marketContext = buildMarketContext(benchmarks, macroRegime);
   
   const prompt = `
-    You are FinWise, an elite autonomous AI wealth advisor powered by live Google Cloud BigQuery datasets (finwise-506509.finwise_data).
+    You are FinoGyaan, an elite autonomous AI wealth advisor powered by live Google Cloud BigQuery datasets (finwise-506509.finwise_data).
     You have access to 20+ years of REAL historical market data and live macroeconomic indicators (Inflation, Fed Policy Rates, Yield Curve spreads, VIX).
     
     USER PROFILE:
-    - Target Market: ${profile.market}
     - Objective: ${profile.objective}
     - Risk Profile: ${profile.riskProfile}
     - Monthly Income: ${currency}${profile.income}
@@ -57,12 +56,16 @@ export const generateAllocationAgent = async (profile: UserProfile, benchmarks: 
     ANALYSIS INSTRUCTIONS:
     1. FACTOR IN MACROECONOMIC REGIME: Consider current inflation (${macroRegime?.cpiInflation || '2.9%'}), policy interest rates (${macroRegime?.fedFundsRate || '3.63%'}), and yield curve spread (${macroRegime?.yieldCurveSpread || '+0.39%'}).
     2. Examine the CURRENT MARKET REGIME: Look at 30-day momentum and 1Y returns.
-    3. Use the 30Y CAGR and VOLATILITY to set long-term expected returns per asset class.
-    4. Use MAX DRAWDOWN data to calibrate risk — S&P crashed -56.78% in 2009, Nifty crashed -59.86% in 2008.
-    5. Consider the user's risk tolerance and horizon when weighting between growth and safety.
-    6. Allocate using EXACTLY these 6 categories (even if 0%): Gold/Silver, Mutual Funds, Bonds, Fixed Deposit, Stocks, Alternative Growth.
-    7. Ensure percentages sum to 100%.
-    8. Provide 3-4 prioritized monthly action steps grounded in the current macro and market data.
+    3. GLOBAL MULTI-MARKET WEALTH STRATEGY: Provide an institutional-grade asset allocation combining both high-growth Indian domestic opportunities and US / Global market exposure (e.g. S&P 500 / Nasdaq 100 tech leaders for dollar-hedge and global tech leadership alongside Indian domestic compounding).
+    4. Use the 30Y CAGR and VOLATILITY to set long-term expected returns per asset class.
+    5. Use MAX DRAWDOWN data to calibrate risk — S&P crashed -56.78% in 2009, Nifty crashed -59.86% in 2008.
+    6. Consider the user's risk tolerance and horizon when weighting between growth and safety.
+    7. Allocate using EXACTLY these 6 categories (even if 0%): Gold/Silver, Mutual Funds, Bonds, Fixed Deposit, Stocks, Alternative Growth. Percentages must sum to 100%.
+    8. SMART CONCENTRATION RULE (FOR SMALL MONTHLY AMOUNTS < ${currency}10,000):
+       If monthly investable surplus (Income - Expenses = ${currency}${Math.max(0, profile.income - profile.expenses)}) is under ${currency}10,000:
+       DO NOT over-diversify across all 6 asset classes. Avoid splitting small capital into tiny 5% slices.
+       Instead, CONCENTRATE 70-80% in core Mutual Funds / Index and 20-30% in Fixed Deposit / Liquid safety. Set niche categories (Alternative Growth, separate Stocks) to 0%.
+    9. Provide 3-4 prioritized monthly action steps. Highlight both domestic compounding and US/global diversification where applicable. Keep each step concise, punchy, and actionable (under 20 words each). Do NOT write long paragraphs.
   `;
 
   const response = await ai.models.generateContent({
@@ -153,22 +156,26 @@ export const generateNarrativeAgent = async (profile: UserProfile, allocation: A
   const marketContext = buildMarketContext(benchmarks, macroRegime);
 
   const prompt = `
-    You are FinWise's Narrative Synthesizer Agent.
+    You are FinoGyaan's Narrative Synthesizer Agent.
     Write a professional financial strategy narrative and a Macro Regime & Rate Cycle Analysis.
     ALL your analysis must be grounded in the REAL BigQuery data provided below.
     
-    Profile: Market ${profile.market}, Objective ${profile.objective}, Risk ${profile.riskProfile}, Horizon ${profile.goalHorizon} years.
+    Profile: Globally Diversified Multi-Market Portfolio (Indian Domestic Growth + US/Global Equities & ETFs), Objective ${profile.objective}, Risk ${profile.riskProfile}, Horizon ${profile.goalHorizon} years.
     Allocation: ${JSON.stringify(allocation.assetAllocation)}
     
     [LIVE GOOGLE CLOUD BIGQUERY MARKET INTELLIGENCE — 660,000+ records, 2005-2026]
     ${marketContext}
     
     INSTRUCTIONS:
-    1. Write a 2-3 paragraph narrative explaining the strategy. Reference SPECIFIC numbers from the BigQuery data (e.g., "Gold's 30Y CAGR of 12.61% combined with its current 39.8% 1Y momentum...").
+    1. Write a concise, scannable executive summary (3-4 crisp bullet points or short sentences). Focus on:
+       • Core Growth Engine: Why the equity/fund allocation was chosen (blending high-growth Indian compounding and US/global tech leaders) with BigQuery 30Y CAGR.
+       • Defensive Anchor: How gold, bonds, or fixed deposits protect capital.
+       • Macroeconomic Alignment: How this fits current inflation and policy rates.
+       CRITICAL: DO NOT write a single dense, heavy wall of text. Use clean bullet points or short line breaks for effortless scanning.
     2. For the Regime Analysis, use the EXACT max drawdown percentages and dates from BigQuery:
        - Reference actual drawdown dates (e.g., "S&P 500 peaked-to-trough -56.78% hitting bottom on March 9, 2009")
        - Calculate approximate portfolio impact using the user's allocation weights
-       - Estimate recovery times based on the data coverage
+       - Keep impact descriptions concise and direct.
     3. Do NOT make up drawdown numbers — use only the figures provided above.
   `;
 
@@ -214,10 +221,10 @@ export const getCategoryRecommendation = async (category: string, profile: UserP
   const marketContext = buildMarketContext(benchmarks);
 
   const prompt = `
-    You are FinWise, an elite autonomous AI wealth advisor.
+    You are FinoGyaan, an elite autonomous AI wealth advisor.
     The user has selected the asset category "${category}" from their portfolio for a deep dive.
     
-    User Profile: Market ${profile.market}, Risk Profile ${profile.riskProfile}, Goal Horizon: ${profile.goalHorizon} years.
+    User Profile: Risk Profile ${profile.riskProfile}, Goal Horizon: ${profile.goalHorizon} years.
     
     [SPECIFIC BIGQUERY DATA FOR ${category.toUpperCase()}]:
     ${JSON.stringify(categoryData, null, 2)}
@@ -226,6 +233,24 @@ export const getCategoryRecommendation = async (category: string, profile: UserP
     ${marketContext}
 
     Recommend how to split their investment *within* this specific category based on the BigQuery risk metrics, current momentum, and 1Y returns.
+    
+    CRITICAL MULTI-MARKET REQUIREMENT:
+    We provide a globally balanced portfolio providing assets from BOTH the Indian market (NSE) AND the US / Global market wherever possible.
+    - If "${category}" is "Stocks" or "Equities":
+      You MUST provide sub-categories covering BOTH Indian Equities (e.g. "Indian Bluechip & Large-Cap Equities", "Indian High-Growth / Midcap Equities") AND US Equities (e.g. "US Tech & Mega-Cap Growth", "US Global Industry Leaders").
+    - If "${category}" is "Mutual Funds" or "Index Funds":
+      You MUST provide distinct, non-overlapping sub-categories covering BOTH Domestic Indian Funds AND US / Global Index Funds:
+      1. "Domestic Indian Core Large-Cap Index Funds" (Tracking Nifty 50 and bluechip domestic indices)
+      2. "Indian Midcap & High-Growth Funds" (Tracking Nifty Midcap 150 and emerging growth)
+      3. "US Tech & Nasdaq 100 Index ETFs" (Tracking Nasdaq 100 QQQ for global technology exposure)
+      4. "US S&P 500 & Global Index ETFs" (Tracking broad US market VOO / SPY and global funds)
+    - If "${category}" is "Bonds":
+      Provide sub-categories covering both Domestic Indian G-Secs / Corporate Bonds and US Treasuries / Global Bond ETFs.
+    - If "${category}" is "Gold/Silver":
+      Provide liquid Gold ETFs and Silver ETFs.
+      
+    CRITICAL EXCLUSION: NEVER include "Physical Gold" or physical bullion as an option. Only recommend liquid, exchange-traded or sovereign financial instruments (e.g. Gold Exchange Traded Funds (ETFs), Silver Exchange Traded Funds (ETFs), Sovereign Gold Bonds (SGBs)).
+    IMPORTANT: In sub-category names, NEVER include specific year ranges or timeframes in parentheses (e.g. use "Short-Term FDs", "Medium-Term FDs", "Long-Term FDs", "Liquid FDs" without parenthetical year ranges like "(1-2 years)" or "(5-7 years)", as each investor defines horizons differently).
     Provide 3 concise key takeaways explaining the strategy, and specific sub-allocations that sum to 100%.
   `;
 
@@ -257,11 +282,32 @@ export const getCategoryRecommendation = async (category: string, profile: UserP
   });
 
   const cleanJson = response.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-  return JSON.parse(cleanJson) as CategoryRecommendation;
+  const rec = JSON.parse(cleanJson) as CategoryRecommendation;
+
+  // Strict programmatic exclusion of any "Physical Gold" or physical bullion options
+  if (rec.subCategories && rec.subCategories.length > 0) {
+    rec.subCategories = rec.subCategories.filter(
+      sub => !sub.name.toLowerCase().includes('physical')
+    );
+    // Re-normalize percentages to strictly sum to 100%
+    const total = rec.subCategories.reduce((acc, curr) => acc + curr.percentage, 0);
+    if (total > 0 && total !== 100) {
+      rec.subCategories = rec.subCategories.map(sub => ({
+        ...sub,
+        percentage: Math.round((sub.percentage / total) * 100)
+      }));
+      const adjustedTotal = rec.subCategories.reduce((acc, curr) => acc + curr.percentage, 0);
+      if (adjustedTotal !== 100 && rec.subCategories.length > 0) {
+        rec.subCategories[0].percentage += (100 - adjustedTotal);
+      }
+    }
+  }
+
+  return rec;
 };
 // Asset Picker Agent
 export const getSpecificAssetRecommendations = async (mainCategory: string, subCategory: string, profile: UserProfile): Promise<SpecificAssetPick[]> => {
-  // Try to get real stocks from BigQuery based on category and target market
+  // Try to get real stocks from BigQuery based on category (supporting both Indian and US instruments)
   const bqTopStocks = await fetchTopStocksByCategory(subCategory, profile.market);
   
   let bqContext = '';
@@ -275,19 +321,35 @@ export const getSpecificAssetRecommendations = async (mainCategory: string, subC
     `;
   }
 
+  const marketRule = `MULTI-MARKET CAPABILITY:
+FinoGyaan advises across BOTH the Indian domestic market (NSE/BSE) AND the US/Global market.
+- If the subcategory refers to Indian assets (e.g. Indian Large-Cap, Nifty Index), recommend Indian instruments (.NS tickers or Indian fund names, priced in ₹).
+- If the subcategory refers to US/Global assets (e.g. US Tech Giants, S&P 500, Nasdaq 100), recommend US-listed instruments (e.g. QQQ, VOO, SPY, NVDA, AAPL, MSFT, priced in $).
+- If the subcategory is mixed or general (e.g. Index ETFs, Technology Equities), you can recommend top performers from BOTH Indian and US markets!`;
+
   const prompt = `
-    You are FinWise, an elite autonomous AI wealth advisor.
+    You are FinoGyaan, an elite autonomous AI wealth advisor.
     The user selected main category "${mainCategory}" and sub-category "${subCategory}".
     
-    Based on their profile (Market: ${profile.market}, Risk: ${profile.riskProfile}, Horizon: ${profile.goalHorizon} years), provide the TOP specific asset recommendations for this sub-category.
+    Based on their profile (Risk: ${profile.riskProfile}, Horizon: ${profile.goalHorizon} years), provide the TOP specific asset recommendations for this sub-category.
     
+    ${marketRule}
+
     ${bqContext}
     
-    If BigQuery data is provided above, YOU MUST USE IT. 
-    If not, provide your best recommendations using real market tickers.
-    
-    Provide Symbol, Name, Estimated Current Price, Past Performance (e.g. 1Y return), Future Prediction, and Reasoning.
-    You MUST return exactly the same number of items as the BigQuery data (if provided), or exactly 10 items if no BigQuery data is provided.
+    SELECTION QUANTITY & COMPREHENSIVENESS:
+    You MUST return between 4 and 6 top-tier, high-conviction asset picks for this sub-category.
+    - If BigQuery data is provided above, you MUST include those exact BigQuery assets first (grounded with their exact symbol, name, price, and return).
+    - Complement them with leading real-world institutional instruments matching the category so the user always gets a comprehensive selection:
+      * For "Indian Midcap / Flexicap Funds": Include MID150BEES.NS alongside leading real-world midcap/flexicap funds (e.g. Parag Parikh Flexi Cap Fund, HDFC Mid-Cap Opportunities Fund, Motilal Oswal Midcap Fund, Quant Mid Cap Fund).
+      * For "Domestic Indian Index Funds": Include NIFTYBEES.NS, BANKBEES.NS, JUNIORBEES.NS alongside UTI Nifty 50 Index Fund or HDFC Nifty 50 Index Fund.
+    - CRITICAL: Maintain strict separation between categories. NEVER include midcap funds in the large-cap core index tab, or large-cap index funds in the midcap tab.
+
+    CRITICAL FIELD FORMAT RULES:
+    1. 'symbol': MUST be a short 2-6 character ticker (e.g. "SGB", "GOLDBEES.NS", "GLD", "MID150BEES.NS", "PPFAS"). NEVER put phrases like "SGB Tax Benefits" or "SGB Safety" as the symbol.
+    2. 'name': The official name of the asset (e.g. "Sovereign Gold Bond 2023-24 Series IV", "RBI Sovereign Gold Bond", "Parag Parikh Flexi Cap Fund").
+    3. 'currentPriceEstimate': MUST be a concise numeric price under 15 characters (e.g. "₹7,450 / g", "₹130.05", "$422.60", or "2.5% + Gold"). NEVER write descriptive sentences or paragraphs in currentPriceEstimate (DO NOT write "Reflects prevailing gold prices at issue" or "Denominated in grams"). Put all explanations in 'reasoning'.
+    4. For Sovereign Gold Bonds (SGBs): Recommend actual RBI Sovereign Gold Bond tranches or series (e.g. "SGB 2023-24 Series IV", "SGB 2024-25 Series I", "SGB 2023-24 Series III"). Set symbol to "SGB" or "SGB-RBI". Set price to prevailing gold rate like "₹7,450 / g".
   `;
 
   const response = await ai.models.generateContent({
@@ -314,7 +376,50 @@ export const getSpecificAssetRecommendations = async (mainCategory: string, subC
   });
 
   const cleanJson = response.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-  return JSON.parse(cleanJson) as SpecificAssetPick[];
+  const parsedPicks = JSON.parse(cleanJson) as SpecificAssetPick[];
+
+  // Strict Real-Time Data Reconciler:
+  // If BigQuery returned actual market records, lock the displayed price and 1Y trailing return to the exact BigQuery values
+  if (bqTopStocks && bqTopStocks.length > 0) {
+    const cleanSym = (s: string) => (s || '').trim().toUpperCase().replace(/\.(NS|BO)$/i, '');
+    return parsedPicks.map(pick => {
+      const pSym = (pick.symbol || '').trim().toUpperCase();
+      const pName = (pick.name || '').trim().toLowerCase();
+
+      const matchedBq = bqTopStocks.find((b: any) => {
+        const bSym = (b.symbol || '').trim().toUpperCase();
+        const bName = (b.name || '').trim().toLowerCase();
+
+        // 1. Exact ticker symbol match (e.g. "GOLDBEES.NS" === "GOLDBEES.NS", "GLD" === "GLD")
+        if (bSym === pSym) return true;
+        // 2. Base ticker match without exchange suffix (e.g. "GOLDBEES" === "GOLDBEES")
+        if (cleanSym(bSym) === cleanSym(pSym)) return true;
+        // 3. Exact full company / ETF name match
+        if (bName && pName && (bName === pName || bName.replace(/\s+/g, '') === pName.replace(/\s+/g, ''))) return true;
+
+        return false;
+      });
+
+      if (matchedBq && matchedBq.current_price !== undefined) {
+        const retNum = parseFloat(matchedBq.return_1yr_pct);
+        const retSign = retNum >= 0 ? '+' : '';
+        const priceNum = parseFloat(matchedBq.current_price);
+        const isIndian = (matchedBq.symbol && matchedBq.symbol.endsWith('.NS')) || 
+                         (matchedBq.category && matchedBq.category.toLowerCase().startsWith('in'));
+        const currSign = isIndian ? '₹' : '$';
+        return {
+          ...pick,
+          symbol: matchedBq.symbol,
+          name: matchedBq.name || pick.name,
+          currentPriceEstimate: isNaN(priceNum) ? pick.currentPriceEstimate : `${currSign}${priceNum.toLocaleString()}`,
+          pastPerformance: isNaN(retNum) ? pick.pastPerformance : `${retSign}${retNum.toFixed(2)}% (1Y Return)`
+        };
+      }
+      return pick;
+    });
+  }
+
+  return parsedPicks;
 };
 
 // Conversational Advisor Agent
@@ -324,7 +429,7 @@ export const initChatSession = (profile: UserProfile, allocation: AllocationData
     model: 'gemini-2.5-flash',
     config: {
       systemInstruction: `
-        You are FinWise, an elite AI wealth advisor backed by live BigQuery datasets (finwise-506509.finwise_data).
+        You are FinoGyaan, an elite AI wealth advisor backed by live BigQuery datasets (finwise-506509.finwise_data).
         You have analyzed 660,000+ records of historical market data and live macroeconomic indicators (Inflation, Fed Policy Rates, Yield Curve spreads, VIX).
         
         User Profile: ${JSON.stringify(profile)}

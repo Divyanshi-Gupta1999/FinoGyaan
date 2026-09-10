@@ -10,7 +10,7 @@ import { fetchMarketAnalysis, fetchMacroRegime } from './services/bigqueryServic
 import InputForm from './components/InputForm';
 import Dashboard from './components/Dashboard';
 import Chat from './components/Chat';
-import { LayoutDashboard, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Sun, Moon } from 'lucide-react';
 
 const DEFAULT_PROFILE: UserProfile = {
   income: 0,
@@ -25,6 +25,28 @@ const DEFAULT_PROFILE: UserProfile = {
 
 const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  React.useEffect(() => {
+    const saved = (localStorage.getItem('finwise_theme') as 'dark' | 'light') || 'dark';
+    setTheme(saved);
+    if (saved === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('finwise_theme', next);
+    if (next === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
   
   // Multi-Agent & Data State
   const [isPlanActive, setIsPlanActive] = useState(false);
@@ -48,7 +70,13 @@ const App: React.FC = () => {
   const handleGeneratePlan = async () => {
     // Validation
     if (profile.income <= 0) {
-      setError("Please provide a valid Monthly Income.");
+      setError("Please provide a valid Monthly Income greater than 0.");
+      return;
+    }
+
+    if (profile.expenses >= profile.income) {
+      const sym = profile.market === 'US' ? '$' : '₹';
+      setError(`Monthly expenses (${sym}${profile.expenses.toLocaleString()}) cannot exceed or equal monthly income (${sym}${profile.income.toLocaleString()}). A positive savings buffer is required.`);
       return;
     }
     
@@ -124,77 +152,101 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-100 dark:bg-gray-950 overflow-hidden font-sans transition-colors duration-200">
       {/* Sidebar */}
       <InputForm 
         profile={profile} 
         onChange={setProfile} 
         onSubmit={handleGeneratePlan} 
-        isLoading={isFetchingBQ || isGeneratingAllocation} 
+        isLoading={isFetchingBQ || isGeneratingAllocation}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-950">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
         
-        {/* Top Navigation Tabs */}
-        {isPlanActive && (
-          <div className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-6 py-2.5 flex items-center justify-between z-10">
-            <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+        {/* Top Header / Navigation Bar — Always accessible with Global Theme Toggle */}
+        <div className="bg-white dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800/80 px-6 py-2.5 flex items-center justify-between z-10 transition-colors duration-200 shadow-sm flex-shrink-0">
+          {isPlanActive ? (
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800/80">
               <button
                 onClick={() => setActiveTab(TabState.DASHBOARD)}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                   activeTab === TabState.DASHBOARD 
-                    ? 'bg-slate-800 text-white shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                    ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-white shadow-md shadow-slate-200/50 dark:shadow-none' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-900'
                 }`}
               >
-                <LayoutDashboard className="w-3.5 h-3.5 text-emerald-400" />
+                <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 Strategy Dashboard
               </button>
               <button
                 onClick={() => setActiveTab(TabState.CHAT)}
                 disabled={isGeneratingNarrative || isGeneratingProjections}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                   activeTab === TabState.CHAT 
-                    ? 'bg-slate-800 text-white shadow-sm' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed'
+                    ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-white shadow-md shadow-slate-200/50 dark:shadow-none' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed'
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                <MessageSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                 AI Advisor Chat
               </button>
             </div>
+          ) : (
+            <div />
+          )}
 
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono font-semibold text-slate-700 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               725,000+ BigQuery Nodes Active
             </div>
+
+            {/* Global Theme Toggle Button */}
+            <button 
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-all shadow-sm active:scale-95 text-xs font-bold cursor-pointer"
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-amber-400" />
+                  <span className="hidden sm:inline">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-slate-700" />
+                  <span className="hidden sm:inline">Dark Mode</span>
+                </>
+              )}
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto relative custom-scrollbar">
           {error && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/10 border border-red-500/40 text-red-300 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 text-sm font-medium backdrop-blur-md">
-              <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-300 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 text-sm font-medium backdrop-blur-md">
+              <svg className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               {error}
             </div>
           )}
 
           {!isPlanActive && (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center max-w-2xl mx-auto">
-              <div className="w-20 h-20 bg-slate-900/80 rounded-2xl flex items-center justify-center mb-6 shadow-2xl border border-slate-800/80 relative">
-                <div className="absolute inset-0 bg-emerald-500/5 rounded-2xl animate-pulse"></div>
-                <LayoutDashboard className="w-9 h-9 text-emerald-400" />
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-8 text-center max-w-2xl mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 flex items-center justify-center mb-5 shadow-sm">
+                <img src="/finogyaan-icon.png" alt="FinoGyaan" className="w-full h-full object-contain" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-100 tracking-tight mb-2">Autonomous Wealth Strategy Studio</h2>
-              <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                Enter your client's financial parameters on the left and click <span className="text-emerald-400 font-semibold">"Generate Autonomous Plan"</span> to trigger 4 parallel AI agents backed by 725,000+ real-time BigQuery records.
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight mb-2">Build Your Wealth Plan</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6 max-w-md">
+                Select a sample profile below or enter your details on the left to start.
               </p>
 
               {/* Quick Sample Profiles for Instant Exploration */}
-              <div className="w-full bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 text-left">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+              <div className="w-full bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4 text-left shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
                   ⚡ Quick-Load Test Profiles:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -211,10 +263,10 @@ const App: React.FC = () => {
                         goalHorizon: 7
                       });
                     }}
-                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 text-left transition-all group"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-slate-900 text-left transition-all group"
                   >
-                    <span className="text-xs font-bold text-white group-hover:text-emerald-400 block mb-0.5">Family Milestone</span>
-                    <span className="text-[11px] text-slate-400 font-mono block">₹1.5L/mo • 7 Yr • Moderate</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 block mb-0.5">Family Milestone</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block">₹1.5L/mo • 7 Yr • Moderate</span>
                   </button>
 
                   <button
@@ -230,10 +282,10 @@ const App: React.FC = () => {
                         goalHorizon: 15
                       });
                     }}
-                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 text-left transition-all group"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-slate-900 text-left transition-all group"
                   >
-                    <span className="text-xs font-bold text-white group-hover:text-emerald-400 block mb-0.5">Aggressive FIRE</span>
-                    <span className="text-[11px] text-slate-400 font-mono block">₹3.0L/mo • 15 Yr • Aggressive</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 block mb-0.5">Aggressive FIRE</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block">₹3.0L/mo • 15 Yr • Aggressive</span>
                   </button>
 
                   <button
@@ -249,10 +301,10 @@ const App: React.FC = () => {
                         goalHorizon: 20
                       });
                     }}
-                    className="p-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 text-left transition-all group"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-slate-900 text-left transition-all group"
                   >
-                    <span className="text-xs font-bold text-white group-hover:text-emerald-400 block mb-0.5">Retirement Corpus</span>
-                    <span className="text-[11px] text-slate-400 font-mono block">₹2.0L/mo • 20 Yr • Conservative</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 block mb-0.5">Retirement Corpus</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block">₹2.0L/mo • 20 Yr • Conservative</span>
                   </button>
                 </div>
               </div>
@@ -271,11 +323,12 @@ const App: React.FC = () => {
               isGeneratingAllocation={isGeneratingAllocation}
               isGeneratingProjections={isGeneratingProjections}
               isGeneratingNarrative={isGeneratingNarrative}
+              theme={theme}
             />
           )}
 
           {isPlanActive && activeTab === TabState.CHAT && (
-            <Chat messages={chatMessages} setMessages={setChatMessages} />
+            <Chat messages={chatMessages} setMessages={setChatMessages} theme={theme} />
           )}
         </div>
       </div>

@@ -7,6 +7,8 @@ interface InputFormProps {
   onChange: (profile: UserProfile) => void;
   onSubmit: () => void;
   isLoading: boolean;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLoading }) => {
@@ -30,18 +32,20 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
   const isSpecificMilestone = profile.objective === 'MILESTONE';
 
   return (
-    <div className="bg-slate-900/95 border-r border-slate-800/80 w-full md:w-80 p-6 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-xl backdrop-blur-sm select-none">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800/80">
-        <img 
-          src="/favicon.svg" 
-          alt="FinWise AI" 
-          className="w-10 h-10 rounded-xl shadow-lg flex-shrink-0" 
-        />
+    <div className="bg-white dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800/80 w-full md:w-80 p-6 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-sm dark:shadow-xl backdrop-blur-sm select-none transition-colors duration-200">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800/80">
+        <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 p-1.5 flex items-center justify-center shadow-sm flex-shrink-0">
+          <img 
+            src="/finogyaan-icon.png" 
+            alt="FinoGyaan" 
+            className="w-full h-full object-contain" 
+          />
+        </div>
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-1.5 leading-tight">
-            FinWise <span className="text-emerald-400 font-semibold">AI</span>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center leading-tight">
+            FinoGyaan
           </h1>
-          <p className="text-[11px] text-slate-400 font-mono tracking-tight mt-0.5">Institutional Wealth Advisor</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tracking-tight mt-0.5">Institutional Wealth Advisor</p>
         </div>
       </div>
 
@@ -49,8 +53,8 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
         
         {/* Objective Selection */}
         <div>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-            <Flag className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+            <Flag className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span>Investment Objective</span>
           </label>
           <div className="relative flex items-center">
@@ -58,7 +62,7 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
               name="objective"
               value={profile.objective}
               onChange={handleSelectChange}
-              className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer hover:border-slate-700 truncate"
+              className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 truncate"
             >
               <option value="MILESTONE">Specific Milestone (House, Car, etc.)</option>
               <option value="FIRE">Long-Term Compounding / FIRE</option>
@@ -70,8 +74,8 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
 
         {/* Risk Profile */}
         <div>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-            <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+            <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <span>Risk Tolerance</span>
           </label>
           <div className="relative flex items-center">
@@ -79,7 +83,7 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
               name="riskProfile"
               value={profile.riskProfile}
               onChange={handleSelectChange}
-              className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer hover:border-slate-700 truncate"
+              className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 truncate"
             >
               <option value="CONSERVATIVE">Conservative (Capital Preservation)</option>
               <option value="MODERATE">Moderate (Balanced Growth)</option>
@@ -89,12 +93,12 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-800/80"></div>
+        <div className="pt-2 border-t border-slate-200 dark:border-slate-800/80"></div>
 
         {/* Financials */}
         <div>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-            <DollarSign className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+            <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
             <span>Monthly Income ({currencySymbol})</span>
           </label>
           <input
@@ -102,14 +106,14 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
             name="income"
             value={profile.income || ''}
             onChange={handleNumberChange}
-            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-700 tabular-nums"
+            className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
             placeholder="e.g. 150000"
           />
         </div>
 
         <div>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-            <Wallet className="w-4 h-4 text-blue-400 flex-shrink-0" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+            <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
             <span>Fixed Expenses ({currencySymbol})</span>
           </label>
           <input
@@ -117,14 +121,14 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
             name="expenses"
             value={profile.expenses || ''}
             onChange={handleNumberChange}
-            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-700 tabular-nums"
+            className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
             placeholder="e.g. 60000"
           />
         </div>
 
         <div>
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-            <DollarSign className="w-4 h-4 text-purple-400 flex-shrink-0" />
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+            <DollarSign className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
             <span>Current Capital ({currencySymbol})</span>
           </label>
           <input
@@ -132,7 +136,7 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
             name="capital"
             value={profile.capital || ''}
             onChange={handleNumberChange}
-            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-700 tabular-nums"
+            className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
             placeholder="e.g. 500000"
           />
         </div>
@@ -141,8 +145,8 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
         {isSpecificMilestone && (
           <div className="space-y-4 pt-1 animate-in slide-in-from-top-2 duration-300">
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-                <Target className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+                <Target className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                 <span>Target Goal ({currencySymbol})</span>
               </label>
               <input
@@ -150,14 +154,14 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
                 name="goalAmount"
                 value={profile.goalAmount || ''}
                 onChange={handleNumberChange}
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-700 tabular-nums"
-                placeholder="e.g. 2500000"
+                className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
+                placeholder={profile.market === 'US' ? 'e.g. 250000' : 'e.g. 2500000'}
               />
             </div>
 
             <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 mb-1.5 select-none">
-                <Clock className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+                <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
                 <span>Goal Horizon (Years)</span>
               </label>
               <input
@@ -165,7 +169,7 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, isLo
                 name="goalHorizon"
                 value={profile.goalHorizon || ''}
                 onChange={handleNumberChange}
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-700 tabular-nums"
+                className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
                 placeholder="e.g. 7"
               />
             </div>
