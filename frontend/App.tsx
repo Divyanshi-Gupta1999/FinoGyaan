@@ -180,55 +180,68 @@ const App: React.FC = () => {
     }
   };
 
+  // Mobile panel state: 'form' | 'dashboard'
+  const [mobilePanel, setMobilePanel] = useState<'form' | 'dashboard'>('form');
+
+  // Auto-switch to dashboard on mobile after plan is generated
+  React.useEffect(() => {
+    if (isPlanActive) setMobilePanel('dashboard');
+  }, [isPlanActive]);
+
   return (
-    <div className="flex h-screen bg-slate-100 dark:bg-gray-950 overflow-hidden font-sans transition-colors duration-200">
-      {/* Sidebar */}
-      <InputForm 
-        profile={profile} 
-        onChange={setProfile} 
-        onSubmit={handleGeneratePlan}
-        onReset={handleReset}
-        isLoading={isFetchingBQ || isGeneratingAllocation}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+    <div className="flex flex-col md:flex-row h-screen bg-slate-100 dark:bg-gray-950 overflow-hidden font-sans transition-colors duration-200">
+
+      {/* Sidebar — hidden on mobile when dashboard is active */}
+      <div className={`${mobilePanel === 'form' ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 h-full`}>
+        <InputForm 
+          profile={profile} 
+          onChange={setProfile} 
+          onSubmit={handleGeneratePlan}
+          onReset={() => { handleReset(); setMobilePanel('form'); }}
+          isLoading={isFetchingBQ || isGeneratingAllocation}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className={`${mobilePanel === 'dashboard' ? 'flex' : 'hidden'} md:flex flex-1 flex-col h-full overflow-hidden relative bg-slate-50 dark:bg-slate-950 transition-colors duration-200`}>
         
-        {/* Top Header / Navigation Bar — Always accessible with Global Theme Toggle */}
-        <div className="bg-white dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800/80 px-6 py-2.5 flex items-center justify-between z-10 transition-colors duration-200 shadow-sm flex-shrink-0">
+        {/* Top Header / Navigation Bar */}
+        <div className="bg-white dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800/80 px-4 md:px-6 py-2.5 flex items-center justify-between z-10 transition-colors duration-200 shadow-sm flex-shrink-0">
           {isPlanActive ? (
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800/80">
               <button
                 onClick={() => setActiveTab(TabState.DASHBOARD)}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                   activeTab === TabState.DASHBOARD 
                     ? 'bg-white dark:bg-slate-800 text-emerald-700 dark:text-white shadow-md shadow-slate-200/50 dark:shadow-none' 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-900'
                 }`}
               >
                 <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                Strategy Dashboard
+                <span className="hidden sm:inline">Strategy Dashboard</span>
+                <span className="sm:hidden">Plan</span>
               </button>
               <button
                 onClick={() => setActiveTab(TabState.CHAT)}
                 disabled={isGeneratingNarrative || isGeneratingProjections}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                   activeTab === TabState.CHAT 
                     ? 'bg-white dark:bg-slate-800 text-blue-700 dark:text-white shadow-md shadow-slate-200/50 dark:shadow-none' 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-900 disabled:opacity-40 disabled:cursor-not-allowed'
                 }`}
               >
                 <MessageSquare className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                AI Advisor Chat
+                <span className="hidden sm:inline">AI Advisor Chat</span>
+                <span className="sm:hidden">Chat</span>
               </button>
             </div>
           ) : (
             <div />
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <div className="hidden md:flex items-center gap-2 text-xs font-mono font-semibold text-slate-700 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               725,000+ BigQuery Nodes Active
@@ -237,7 +250,7 @@ const App: React.FC = () => {
             {/* Global Theme Toggle Button */}
             <button 
               onClick={toggleTheme}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-all shadow-sm active:scale-95 text-xs font-bold cursor-pointer"
+              className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-all shadow-sm active:scale-95 text-xs font-bold cursor-pointer"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
             >
               {theme === 'dark' ? (
@@ -256,9 +269,9 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+        <div className="flex-1 overflow-y-auto relative custom-scrollbar pb-20 md:pb-0">
           {error && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-300 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 text-sm font-medium backdrop-blur-md">
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-[90%] md:w-auto bg-red-500/10 border border-red-500/40 text-red-600 dark:text-red-300 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 text-sm font-medium backdrop-blur-md">
               <svg className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               {error}
             </div>
@@ -292,6 +305,7 @@ const App: React.FC = () => {
                         goalAmount: 2500000,
                         goalHorizon: 7
                       });
+                      setMobilePanel('form');
                     }}
                     className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-slate-900 text-left transition-all group"
                   >
@@ -311,6 +325,7 @@ const App: React.FC = () => {
                         goalAmount: 0,
                         goalHorizon: 15
                       });
+                      setMobilePanel('form');
                     }}
                     className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-slate-900 text-left transition-all group"
                   >
@@ -330,6 +345,7 @@ const App: React.FC = () => {
                         goalAmount: 0,
                         goalHorizon: 20
                       });
+                      setMobilePanel('form');
                     }}
                     className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-slate-900 text-left transition-all group"
                   >
@@ -362,8 +378,49 @@ const App: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex z-50 safe-area-inset-bottom shadow-lg">
+        <button
+          onClick={() => setMobilePanel('form')}
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+            mobilePanel === 'form'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-400 dark:text-slate-500'
+          }`}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          My Plan
+        </button>
+        <button
+          onClick={() => { if (isPlanActive) { setActiveTab(TabState.DASHBOARD); setMobilePanel('dashboard'); } }}
+          disabled={!isPlanActive}
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-30 ${
+            mobilePanel === 'dashboard' && activeTab === TabState.DASHBOARD
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-400 dark:text-slate-500'
+          }`}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          Dashboard
+        </button>
+        <button
+          onClick={() => { if (isPlanActive) { setActiveTab(TabState.CHAT); setMobilePanel('dashboard'); } }}
+          disabled={!isPlanActive || isGeneratingNarrative || isGeneratingProjections}
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-30 ${
+            mobilePanel === 'dashboard' && activeTab === TabState.CHAT
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-slate-400 dark:text-slate-500'
+          }`}
+        >
+          <MessageSquare className="w-5 h-5" />
+          AI Chat
+        </button>
+      </div>
+
     </div>
   );
 };
 
 export default App;
+

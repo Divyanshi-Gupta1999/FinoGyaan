@@ -33,7 +33,7 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, onRe
   const isSpecificMilestone = profile.objective === 'MILESTONE';
 
   return (
-    <div className="bg-white dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800/80 w-full md:w-80 p-6 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-sm dark:shadow-xl backdrop-blur-sm select-none transition-colors duration-200">
+    <div className="bg-white dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800/80 w-full md:w-80 p-6 pb-24 md:pb-6 flex flex-col h-full overflow-y-auto custom-scrollbar shadow-sm dark:shadow-xl backdrop-blur-sm select-none transition-colors duration-200">
       <button
         onClick={onReset}
         disabled={isLoading}
@@ -147,63 +147,64 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, onRe
           />
         </div>
 
-        {/* Conditional Milestone Fields */}
-        {isSpecificMilestone && (
-          <div className="space-y-4 pt-1 animate-in slide-in-from-top-2 duration-300">
-            <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
-                <Target className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                <span>Target Goal ({currencySymbol})</span>
-              </label>
-              <input
-                type="number"
-                name="goalAmount"
-                value={profile.goalAmount || ''}
-                onChange={handleNumberChange}
-                className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
-                placeholder={profile.market === 'US' ? 'e.g. 250000' : 'e.g. 2500000'}
-              />
-            </div>
+        {/* Investment Horizon (Years) */}
+        <div>
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+            <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+            <span>Investment Horizon (Years)</span>
+          </label>
+          <input
+            type="number"
+            name="goalHorizon"
+            value={profile.goalHorizon || ''}
+            onChange={handleNumberChange}
+            className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
+            placeholder="e.g. 7"
+          />
+        </div>
 
-            <div>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
-                <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
-                <span>Goal Horizon (Years)</span>
-              </label>
-              <input
-                type="number"
-                name="goalHorizon"
-                value={profile.goalHorizon || ''}
-                onChange={handleNumberChange}
-                className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
-                placeholder="e.g. 7"
-              />
-            </div>
+        {/* Conditional Target Goal Amount */}
+        {isSpecificMilestone && (
+          <div className="pt-1 animate-in slide-in-from-top-2 duration-300">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 select-none">
+              <Target className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <span>Target Goal ({currencySymbol})</span>
+            </label>
+            <input
+              type="number"
+              name="goalAmount"
+              value={profile.goalAmount || ''}
+              onChange={handleNumberChange}
+              className="w-full bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all hover:border-slate-300 dark:hover:border-slate-700 tabular-nums"
+              placeholder={profile.market === 'US' ? 'e.g. 250000' : 'e.g. 2500000'}
+            />
           </div>
         )}
       </div>
 
-      <button
-        onClick={onSubmit}
-        disabled={isLoading}
-        className={`mt-6 w-full py-3 px-4 rounded-xl font-medium text-sm text-white transition-all duration-200 flex items-center justify-center gap-2 flex-shrink-0 shadow-sm active:scale-[0.99]
-          ${isLoading 
-            ? 'bg-emerald-700/60 cursor-wait' 
-            : 'bg-emerald-600 hover:bg-emerald-500'
-          }`}
-      >
-        {isLoading ? (
-          <>
-            <svg className="animate-spin -ml-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span className="font-medium">Synthesizing Strategy...</span>
-          </>
-        ) : (
-          <span className="font-medium">Generate Autonomous Plan</span>
-        )}
-      </button>
+      <div className="sticky bottom-0 pt-4 pb-2 bg-gradient-to-t from-white via-white dark:from-slate-900 dark:via-slate-900 to-transparent mt-4 z-10">
+        <button
+          onClick={onSubmit}
+          disabled={isLoading}
+          className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm text-white transition-all duration-200 flex items-center justify-center gap-2 flex-shrink-0 shadow-lg active:scale-[0.99] cursor-pointer
+            ${isLoading 
+              ? 'bg-emerald-700/60 cursor-wait' 
+              : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+            }`}
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin -ml-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Synthesizing Strategy...</span>
+            </>
+          ) : (
+            <span>Generate Autonomous Plan</span>
+          )}
+        </button>
+      </div>
     </div>
   );
 };
