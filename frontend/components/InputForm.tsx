@@ -51,7 +51,7 @@ const InputForm: React.FC<InputFormProps> = ({ profile, onChange, onSubmit, onRe
           <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center leading-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
             FinoGyaan
           </h1>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tracking-tight mt-0.5 group-hover:text-emerald-500 dark:group-hover:text-emerald-500 transition-colors">↩ New Plan</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tracking-tight mt-0.5">Institutional Wealth Advisor</p>
         </div>
       </button>
 
