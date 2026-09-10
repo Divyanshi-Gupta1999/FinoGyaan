@@ -142,7 +142,18 @@ const App: React.FC = () => {
       initChatSession(effectiveProfile, allocData, projData, narrData, bqData, macroData);
 
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred during generation.");
+      let friendlyError = err?.message || "An unexpected error occurred during generation.";
+      try {
+        const parsed = JSON.parse(err.message);
+        if (parsed?.error?.code === 429 || parsed?.error?.status === 'RESOURCE_EXHAUSTED') {
+          friendlyError = "Google Vertex AI rate limit reached (Quota 429). The system has automatically queued retries. Please wait 5 seconds and click 'Generate Autonomous Plan' again.";
+        } else if (parsed?.error?.message) {
+          friendlyError = parsed.error.message;
+        }
+      } catch {
+        // Not a JSON string, keep err.message
+      }
+      setError(friendlyError);
       setIsPlanActive(false);
       setIsFetchingBQ(false);
       setIsGeneratingAllocation(false);

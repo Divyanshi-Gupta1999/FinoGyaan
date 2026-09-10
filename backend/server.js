@@ -266,8 +266,22 @@ app.post('/api-proxy', async (req, res) => {
       body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined,
     };
 
-    // 5. Make the call to the API
-    const apiResponse = await fetch(apiUrl, apiFetchOptions);
+    // 5. Make the call to the API with resilient 429 failover
+    let apiResponse = await fetch(apiUrl, apiFetchOptions);
+
+    // If Vertex AI returns 429 RESOURCE_EXHAUSTED (quota spike on gemini-2.5-pro):
+    if (apiResponse.status === 429) {
+      console.warn(`[Node Proxy] Upstream returned 429 RESOURCE_EXHAUSTED for ${apiUrl}. Initiating automatic failover...`);
+      if (apiUrl.includes('gemini-2.5-pro')) {
+        const fallbackUrl = apiUrl.replace('gemini-2.5-pro', 'gemini-2.5-flash');
+        console.warn(`[Node Proxy] Seamlessly falling over to gemini-2.5-flash: ${fallbackUrl}`);
+        apiResponse = await fetch(fallbackUrl, apiFetchOptions);
+      } else {
+        // Wait 1.5s and retry once
+        await new Promise(r => setTimeout(r, 1500));
+        apiResponse = await fetch(apiUrl, apiFetchOptions);
+      }
+    }
 
     // 6. Respond to the client based on stream type
     if (apiClient.isStreaming) {
