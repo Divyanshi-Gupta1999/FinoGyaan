@@ -1,19 +1,40 @@
 {
-  "hosting": {
-    "public": "frontend/dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "run": {
-          "serviceId": "finwise-app",
-          "region": "us-central1"
+  "hosting": [
+    {
+      "site": "finogyaan",
+      "public": "frontend/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "finogyaan",
+            "region": "us-central1"
+          }
         }
-      }
-    ]
-  }
+      ]
+    },
+    {
+      "site": "finwise-506509",
+      "public": "frontend/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "finogyaan",
+            "region": "us-central1"
+          }
+        }
+      ]
+    }
+  ]
 }
