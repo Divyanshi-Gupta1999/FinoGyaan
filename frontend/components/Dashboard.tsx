@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { UserProfile, AllocationData, Projection, CategoryRecommendation, SpecificAssetPick, MarketBenchmark, NarrativeData, MacroRegimeState } from '../types';
 import { getCategoryRecommendation, getSpecificAssetRecommendations } from '../services/geminiService';
-import { fetchDataHealth, DataHealthResponse } from '../services/bigqueryService';
+import { fetchDataHealth, triggerDataIngestion, DataHealthResponse } from '../services/bigqueryService';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import { ShieldAlert, Target, TrendingUp, X, ChevronRight, Database, CheckCircle2, ArrowLeft, TrendingDown, Activity, Loader2, AlertTriangle, ListChecks, Globe, Gauge, Landmark, DollarSign, Copy } from 'lucide-react';
+import { ShieldAlert, Target, TrendingUp, X, ChevronRight, Database, CheckCircle2, ArrowLeft, TrendingDown, Activity, Loader2, AlertTriangle, ListChecks, Globe, Gauge, Landmark, DollarSign, Copy, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface DashboardProps {
@@ -58,6 +58,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isCopied, setIsCopied] = useState(false);
   const [dataHealth, setDataHealth] = useState<DataHealthResponse | null>(null);
   const [macroViewMode, setMacroViewMode] = useState<'simple' | 'pro'>('simple');
+  const [isSyncingData, setIsSyncingData] = useState(false);
+
+  const handleSyncData = async () => {
+    setIsSyncingData(true);
+    await triggerDataIngestion();
+    const health = await fetchDataHealth();
+    if (health) setDataHealth(health);
+    setIsSyncingData(false);
+  };
 
   // In-session caches: avoid re-fetching the same category / sub-category data
   const categoryRecCache = React.useRef<Map<string, CategoryRecommendation>>(new Map());
@@ -266,7 +275,25 @@ const Dashboard: React.FC<DashboardProps> = ({
                     : 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800/40 text-red-700 dark:text-red-300'
               }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${dataHealth.overallFresh ? 'bg-emerald-500' : dataHealth.stalestDays <= 7 ? 'bg-amber-500' : 'bg-red-500'} animate-pulse`} />
-                Data as of: {dataHealth.tables?.[0]?.latestDate ? new Date(dataHealth.tables.reduce((a, b) => a.daysStale < b.daysStale ? a : b).latestDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown'}
+                <span>
+                  Data as of: {(() => {
+                    const rawDate = dataHealth.tables?.reduce((a, b) => a.daysStale < b.daysStale ? a : b)?.latestDate;
+                    if (!rawDate) return 'Unknown';
+                    const parts = rawDate.split('-');
+                    if (parts.length === 3) {
+                      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    }
+                    return new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  })()}
+                </span>
+                <button
+                  onClick={handleSyncData}
+                  disabled={isSyncingData}
+                  title="Trigger Daily Data Sync"
+                  className="ml-1 p-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded transition-colors"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncingData ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`} />
+                </button>
               </div>
             )}
           </div>

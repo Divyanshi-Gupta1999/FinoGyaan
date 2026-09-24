@@ -10,7 +10,7 @@ import { GoogleAuth } from 'google-auth-library';
 import fetch from 'node-fetch';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer, WebSocket } from 'ws';
-import { execSync } from 'child_process';
+import { execSync, exec } from 'child_process';
 
 import path from 'path';
 import fs from 'fs';
@@ -869,6 +869,33 @@ app.get('/api/bigquery/data-health', async (req, res) => {
     return res.status(500).json({ error: error.message || 'Data health check failed' });
   }
 });
+
+// --- BigQuery Data Ingestion Trigger Endpoint ---
+app.post('/api/bigquery/trigger-ingest', async (req, res) => {
+  console.log('[BigQuery Ingest] Manual trigger received...');
+  try {
+    const isDryRun = req.body?.dryRun === true;
+    const cmd = isDryRun ? 'python3 -m pipelines.ingest_daily --dry-run' : 'python3 -m pipelines.ingest_daily';
+    
+    exec(cmd, { cwd: __dirname }, (error, stdout, stderr) => {
+      if (error) {
+        console.error('[BigQuery Ingest] Pipeline error:', error);
+      } else {
+        console.log('[BigQuery Ingest] Pipeline completed successfully:', stdout);
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Daily ingestion pipeline triggered (${isDryRun ? 'dry-run' : 'live'}).`,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[BigQuery Ingest] Trigger failed:', error);
+    return res.status(500).json({ error: error.message || 'Ingestion trigger failed' });
+  }
+});
+
 
 // Serve static frontend assets if built
 if (fs.existsSync(distPath)) {

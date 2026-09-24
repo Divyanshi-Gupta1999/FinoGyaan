@@ -228,3 +228,20 @@ export const fetchDataHealth = async (): Promise<DataHealthResponse | null> => {
   }
   return null;
 };
+
+export const triggerDataIngestion = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/bigquery/trigger-ingest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.success === true;
+    }
+  } catch (err) {
+    console.warn("[BigQuery Service] Failed to trigger data ingestion:", err);
+  }
+  return false;
+};
+

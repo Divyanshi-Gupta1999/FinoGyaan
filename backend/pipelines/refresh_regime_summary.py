@@ -21,15 +21,21 @@ SOURCE_TABLE = f"{PROJECT_ID}.{DATASET_ID}.market_regime_history"
 
 
 def get_credentials():
-    """Get Google Cloud credentials via gcloud CLI token."""
+    """Get Google Cloud credentials (supports Cloud Functions ADC + local gcloud CLI)."""
     try:
-        token = subprocess.check_output(
-            ["gcloud", "auth", "print-access-token"]
-        ).decode("utf-8").strip()
-        return Credentials(token)
-    except Exception as e:
-        print(f"  [Auth] Failed to get gcloud token: {e}")
-        return None
+        import google.auth
+        credentials, _ = google.auth.default()
+        return credentials
+    except Exception:
+        try:
+            token = subprocess.check_output(
+                ["gcloud", "auth", "print-access-token"]
+            ).decode("utf-8").strip()
+            return Credentials(token)
+        except Exception as e:
+            print(f"  [Auth] Failed to get credentials: {e}")
+            return None
+
 
 
 REGIME_SUMMARY_SQL = f"""

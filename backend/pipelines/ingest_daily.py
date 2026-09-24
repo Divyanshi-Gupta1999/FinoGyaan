@@ -43,12 +43,17 @@ def run_stocks_incremental(dry_run: bool = False) -> dict:
     print("=" * 60)
 
     try:
-        token = subprocess.check_output(
-            ["gcloud", "auth", "print-access-token"]
-        ).decode("utf-8").strip()
-        creds = Credentials(token)
-    except Exception as e:
-        return {"table": TABLE_ID, "rows_appended": 0, "errors": [f"Auth failed: {e}"]}
+        import google.auth
+        creds, _ = google.auth.default()
+    except Exception:
+        try:
+            token = subprocess.check_output(
+                ["gcloud", "auth", "print-access-token"]
+            ).decode("utf-8").strip()
+            creds = Credentials(token)
+        except Exception as e:
+            return {"table": TABLE_ID, "rows_appended": 0, "errors": [f"Auth failed: {e}"]}
+
 
     client = bigquery.Client(project=PROJECT_ID, credentials=creds)
 
@@ -113,17 +118,18 @@ def run_stocks_incremental(dry_run: bool = False) -> dict:
         print("  No new data fetched.")
         return {"table": TABLE_ID, "rows_appended": 0, "errors": errors}
 
-    # Step 3: Dedup — delete overlapping rows per symbol
-    symbols_to_update = set(r["symbol"] for r in all_data)
-    for sym in symbols_to_update:
-        sym_rows = [r for r in all_data if r["symbol"] == sym]
-        min_date = min(r["trade_date"] for r in sym_rows)
+    # Step 3: Dedup — batch delete overlapping rows for updated symbols
+    symbols_to_update = list(set(r["symbol"] for r in all_data))
+    if symbols_to_update:
+        min_date = min(r["trade_date"] for r in all_data)
+        symbols_formatted = ", ".join(f"'{sym}'" for sym in symbols_to_update)
         try:
             client.query(
-                f"DELETE FROM `{TABLE_REF}` WHERE symbol = '{sym}' AND trade_date >= '{min_date}'"
+                f"DELETE FROM `{TABLE_REF}` WHERE symbol IN ({symbols_formatted}) AND trade_date >= '{min_date}'"
             ).result()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"  Warning during dedup delete: {e}")
+
 
     # Step 4: Append new rows
     df = pd.DataFrame(all_data)
@@ -165,12 +171,17 @@ def run_macro_incremental(dry_run: bool = False) -> dict:
     print("=" * 60)
 
     try:
-        token = subprocess.check_output(
-            ["gcloud", "auth", "print-access-token"]
-        ).decode("utf-8").strip()
-        creds = Credentials(token)
-    except Exception as e:
-        return {"table": TABLE_ID, "rows_appended": 0, "errors": [f"Auth failed: {e}"]}
+        import google.auth
+        creds, _ = google.auth.default()
+    except Exception:
+        try:
+            token = subprocess.check_output(
+                ["gcloud", "auth", "print-access-token"]
+            ).decode("utf-8").strip()
+            creds = Credentials(token)
+        except Exception as e:
+            return {"table": TABLE_ID, "rows_appended": 0, "errors": [f"Auth failed: {e}"]}
+
 
     client = bigquery.Client(project=PROJECT_ID, credentials=creds)
 
@@ -239,17 +250,18 @@ def run_macro_incremental(dry_run: bool = False) -> dict:
         print(f"\n  [DRY RUN] Would append {len(all_rows)} macro rows.")
         return {"table": TABLE_ID, "rows_appended": 0, "errors": errors, "dry_run": True}
 
-    # Dedup safety: delete overlapping rows per indicator
-    indicators_to_update = set(r["indicator_code"] for r in all_rows)
-    for code in indicators_to_update:
-        code_rows = [r for r in all_rows if r["indicator_code"] == code]
-        min_date = min(r["period_date"] for r in code_rows)
+    # Dedup safety: batch delete overlapping rows for updated indicators
+    indicators_to_update = list(set(r["indicator_code"] for r in all_rows))
+    if indicators_to_update:
+        min_date = min(r["period_date"] for r in all_rows)
+        indicators_formatted = ", ".join(f"'{code}'" for code in indicators_to_update)
         try:
             client.query(
-                f"DELETE FROM `{TABLE_REF}` WHERE indicator_code = '{code}' AND period_date >= '{min_date}'"
+                f"DELETE FROM `{TABLE_REF}` WHERE indicator_code IN ({indicators_formatted}) AND period_date >= '{min_date}'"
             ).result()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"  Warning during dedup delete: {e}")
+
 
     df = pd.DataFrame(all_rows)
     schema = [
