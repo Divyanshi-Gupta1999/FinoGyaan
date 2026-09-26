@@ -13,10 +13,16 @@ Execution Order:
   4. regime_summary refresh (recompute materialized analytics)
 """
 
+import os
 import sys
 import json
 import datetime
 import traceback
+
+# Ensure backend directory is in sys.path
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 
 # Import pipeline modules
 from pipelines import ingest_market_regime
@@ -68,7 +74,7 @@ def run_stocks_incremental(dry_run: bool = False) -> dict:
         print("\n  No existing data found (table may be empty or new).")
 
     # Step 2: Import the stock universe from ingest_stocks.py
-    sys.path.insert(0, ".")
+    sys.path.insert(0, backend_dir)
     from ingest_stocks import STOCKS, fetch_single_ticker
 
     import concurrent.futures
@@ -195,7 +201,7 @@ def run_macro_incremental(dry_run: bool = False) -> dict:
         latest_dates = {}
         print("\n  No existing data found.")
 
-    sys.path.insert(0, ".")
+    sys.path.insert(0, backend_dir)
     from ingest_macro import fetch_fred_series, fetch_market_indicator
     import pandas as pd
 
